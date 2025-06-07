@@ -5,7 +5,10 @@ OpenMemory 是您的个人记忆层，用于大语言模型 - 私有、便携且
 
 ![](https://private-user-images.githubusercontent.com/94069182/443177726-3c701757-ad82-4afa-bfbe-e049c2b4320b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkyNzM4NDEsIm5iZiI6MTc0OTI3MzU0MSwicGF0aCI6Ii85NDA2OTE4Mi80NDMxNzc3MjYtM2M3MDE3NTctYWQ4Mi00YWZhLWJmYmUtZTA0OWMyYjQzMjBiLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjA3VDA1MTkwMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEyZmRhMjAzZTNlZWE1OTA1ZDA1OGU3YWJlMDBhYzAxZjNiZjc5M2E3NTU3N2E3M2Y0NWQ0NDYzOTUwZTM4NDgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.J62CKtp2WGIoGXPxa7HIG2lPA2-n8xLUsNrwshpUKqE)
 
-在 [原项目](https://github.com/mem0ai/mem0/tree/main/openmemory) 的基础上，我们做了以下修改：去掉 make 统一使用 `docker-compose.yml` 管理配置，方便部署到云服务器。
+在 [原项目](https://github.com/mem0ai/mem0/tree/main/openmemory) 的基础上，我们做了以下修改：
+ * 去掉 make 统一使用 `docker-compose.yml` 管理配置，方便部署到云服务器。
+ * 修复在 Windows 部署中时 UI 无法访问的问题。
+
 
 支持的模型：
 * OpenAI、Azure OpenAI 以及其他 OpenAI 兼容的代理
@@ -24,7 +27,7 @@ OpenMemory 是您的个人记忆层，用于大语言模型 - 私有、便携且
 
 ### 前提条件
 
-在开始之前，请确保你的系统已安装以下软件：
+在开始之前，请确保你的系统已安装以下软件，支持Windows、MacOS 和 Linux：
 
 *   **Docker**: [安装指南](https://docs.docker.com/get-docker/)
 *   **Docker Compose**: [安装指南](https://docs.docker.com/compose/install/)
