@@ -34,7 +34,7 @@ OpenMemory 是您的个人记忆层，用于大语言模型 - 私有、便携且
 首先，将项目代码克隆到你的本地机器：
 
 ```bash
-git clone https://github.com/YourUsername/OpenMemory.git
+git clone https://github.com/osen77/OpenMemory-MCP.git
 cd OpenMemory
 ```
 
