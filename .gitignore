@@ -11,4 +11,4 @@ node_modules/
 api/.openmemory*
 **/.next
 .openmemory/
-.docker-compose.prod.yml
+docker-compose.prod.yml
