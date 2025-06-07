@@ -35,7 +35,7 @@ OpenMemory 是您的个人记忆层，用于大语言模型 - 私有、便携且
 
 ```bash
 git clone https://github.com/osen77/OpenMemory-MCP.git
-cd OpenMemory
+cd OpenMemory-MCP
 ```
 
 ### 2. 配置环境变量
