@@ -12,13 +12,16 @@ services:
       context: ./api
       dockerfile: Dockerfile
     environment:
-      - USER=OSEN
+      - USER=USER
       - OPENAI_API_KEY=sk- # 替换为你的 OpenAI API Key
       - OPENAI_BASE_URL=https://aihubmix.com/v1 # 替换为 OpenAI API Base URL 或者兼容的代理
+      - DATABASE_URL=sqlite:////var/lib/openmemory/openmemory.db
     depends_on:
       - mem0_store
     ports:
       - "8765:8765"
+    volumes:
+      - db_storage:/var/lib/openmemory
     command: >
       uvicorn main:app --host 0.0.0.0 --port 8765 --workers 4
 
@@ -30,8 +33,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8765
-      - NEXT_PUBLIC_USER_ID=OSEN
+      - NEXT_PUBLIC_API_URL=http://localhost:8765 # 替换为你的本地 URL 或域名
+      - NEXT_PUBLIC_USER_ID=USER
 
 volumes:
   mem0_storage:
+  db_storage:
