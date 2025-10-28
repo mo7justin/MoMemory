@@ -95,6 +95,16 @@ interface UseMemoriesApiReturn {
   selectedMemory: SimpleMemory | null;
 }
 
+// TypeScript declaration for Node.js process
+interface ProcessEnv {
+  NODE_ENV?: string;
+  NEXT_PUBLIC_API_URL?: string;
+}
+
+declare const process: {
+  env: ProcessEnv;
+};
+
 export const useMemoriesApi = (): UseMemoriesApiReturn => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +114,8 @@ export const useMemoriesApi = (): UseMemoriesApiReturn => {
   const memories = useSelector((state: RootState) => state.memories.memories);
   const selectedMemory = useSelector((state: RootState) => state.memories.selectedMemory);
 
-  const URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8765";
+  // API base URL with proper TypeScript typing for environment variables
+  const URL = typeof process.env.NEXT_PUBLIC_API_URL === 'string' ? process.env.NEXT_PUBLIC_API_URL : "http://localhost:8765";
 
   const fetchMemories = useCallback(async (
     query?: string,
@@ -162,16 +173,39 @@ export const useMemoriesApi = (): UseMemoriesApiReturn => {
   }, [user_id, dispatch]);
 
   const createMemory = async (text: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
     try {
+      // 检查user_id是否存在
+      if (!user_id) {
+        throw new Error('User ID is required');
+      }
+      
       const memoryData = {
         user_id: user_id,
         text: text,
         infer: false,
         app: "openmemory",
+        metadata: {}
+      };
+      
+      const response = await axios.post<ApiMemoryItem>(`${URL}/api/v1/memories/`, memoryData);
+      
+      // 处理各种可能的错误响应格式
+      if (response.data) {
+        if (typeof response.data === 'string') {
+          throw new Error(response.data);
+        } else if (typeof response.data === 'object' && 'error' in response.data) {
+          throw new Error(String(response.data.error));
+        } else if (typeof response.data === 'object' && 'message' in response.data) {
+          throw new Error(String(response.data.message));
+        }
       }
-      await axios.post<ApiMemoryItem>(`${URL}/api/v1/memories/`, memoryData);
+      
+      setIsLoading(false);
+      setHasUpdates(hasUpdates + 1);
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to create memory';
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to create memory';
       setError(errorMessage);
       setIsLoading(false);
       throw new Error(errorMessage);

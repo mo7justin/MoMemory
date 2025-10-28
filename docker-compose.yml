@@ -1,4 +1,17 @@
 services:
+  pgvector:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=openmemory
+    volumes:
+      - pgvector_pgdata:/var/lib/postgresql/data
+    restart: always
+
+
   mem0_store:
     image: qdrant/qdrant:latest
     ports:
@@ -7,17 +20,18 @@ services:
       - mem0_storage:/mem0/storage
 
   openmemory-mcp:
-    image: mem0/openmemory-mcp:latest
+    image: tjceo721/openmemory-mcp:latest
     build:
       context: ./api
       dockerfile: Dockerfile
+    env_file:
+      - /opt/OpenMemory-MCP/api/.env
     environment:
       - USER=USER
-      - OPENAI_API_KEY=sk- # 替换为你的 OpenAI API Key
-      - OPENAI_BASE_URL=https://aihubmix.com/v1 # 替换为 OpenAI API Base URL 或者兼容的代理
-      - DATABASE_URL=sqlite:////var/lib/openmemory/openmemory.db
+      - DATABASE_URL=postgresql://postgres:123456@pgvector:5432/openmemory
     depends_on:
       - mem0_store
+      - pgvector
     ports:
       - "8765:8765"
     volumes:
@@ -29,13 +43,14 @@ services:
     build:
       context: ./ui
       dockerfile: Dockerfile
-    image: mem0/openmemory-ui:latest
+    image: tjceo721/openmemory-ui:latest
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8765 # 替换为你的本地 URL 或域名
+      - NEXT_PUBLIC_API_URL=http://43.138.163.86:8765 # 替换为你的本地 URL 或域名
       - NEXT_PUBLIC_USER_ID=USER
 
 volumes:
   mem0_storage:
   db_storage:
+  pgvector_pgdata:

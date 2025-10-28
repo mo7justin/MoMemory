@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.name="mem0/openmemory-mcp"
 WORKDIR /usr/src/openmemory
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com -r requirements.txt
 
 COPY config.json .
 COPY . .

@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,12 +13,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useState, useRef } from "react";
 import { GoPlus } from "react-icons/go";
 import { Loader2 } from "lucide-react";
 import { useMemoriesApi } from "@/hooks/useMemoriesApi";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
+
+// Add JSX namespace to fix intrinsic elements typing
+declare namespace JSX {
+  interface IntrinsicElements {
+    [elemName: string]: any;
+  }
+}
 
 export function CreateMemoryDialog() {
   const { createMemory, isLoading, fetchMemories } = useMemoriesApi();
@@ -24,16 +32,28 @@ export function CreateMemoryDialog() {
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   const handleCreateMemory = async (text: string) => {
+    // 检查输入是否为空
+    if (!text.trim()) {
+      toast.error("Memory content cannot be empty");
+      return;
+    }
+    
     try {
       await createMemory(text);
       toast.success("Memory created successfully");
       // close the dialog
       setOpen(false);
+      // 清空输入框
+      if (textRef.current) {
+        textRef.current.value = '';
+      }
       // refetch memories
       await fetchMemories();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to create memory");
+    } catch (error: any) {
+      console.error("Create memory error:", error);
+      // 显示更具体的错误信息
+      const errorMessage = error.message || "Failed to create memory";
+      toast.error(`Failed to create memory: ${errorMessage}`);
     }
   };
 
@@ -72,7 +92,7 @@ export function CreateMemoryDialog() {
             Cancel
           </Button>
           <Button
-            disabled={isLoading}
+            disabled={isLoading || !textRef?.current?.value?.trim()}
             onClick={() => handleCreateMemory(textRef?.current?.value || "")}
           >
             {isLoading ? (
