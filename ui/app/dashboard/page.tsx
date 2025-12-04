@@ -34,17 +34,17 @@ const DashboardStatCard = ({ icon, title, tooltip, value, subtext }: DashboardSt
   <Card className="min-w-0 bg-[rgb(39,39,42)] border border-white/5 text-white shadow-lg">
     <CardHeader className="pb-2">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-white/10 text-white flex items-center justify-center">
-            {icon}
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center text-white/80">
+              {icon}
+            </div>
+            <CardTitle className="text-base font-semibold text-white">{title}</CardTitle>
           </div>
-          <CardTitle className="text-base font-semibold text-white">{title}</CardTitle>
-        </div>
         <UiTooltip>
           <UiTooltipTrigger asChild>
             <button
               type="button"
-              className="h-6 w-6 rounded-full border border-white/40 text-[11px] font-bold text-white/80 flex items-center justify-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              className="h-5 w-5 rounded border border-white/30 text-[11px] font-bold text-white/80 flex items-center justify-center hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-white/60"
             >
               !
             </button>
@@ -149,6 +149,10 @@ export default function DashboardPage() {
     name: format(parseISO(item.date), 'MMM dd', { locale: dateFnsLocale }),
     value: item.memoryGrowth
   }));
+  const memoryGrowthTotal = useMemo(() => {
+    if (!filteredData.length) return 0;
+    return filteredData.reduce((sum, item) => sum + (item.memoryGrowth || 0), 0);
+  }, [filteredData]);
 
   const planCycleRange = useMemo(() => {
     if (!plan) return null;
@@ -417,14 +421,14 @@ export default function DashboardPage() {
       <TooltipProvider delayDuration={0}>
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           <DashboardStatCard
-            icon={<Brain className="h-4 w-4" strokeWidth={1.8} />}
+            icon={<Brain className="h-4 w-4 text-[#4c8bff]" strokeWidth={1.8} />}
             title={t('totalMemories', locale)}
             tooltip={t('totalMemoriesTooltip', locale)}
             value={(stats?.total_memories ?? 0).toLocaleString()}
             subtext={t('allStoredMemories', locale)}
           />
           <DashboardStatCard
-            icon={<Gauge className="h-4 w-4" strokeWidth={1.8} />}
+            icon={<Gauge className="h-4 w-4 text-[#22c55e]" strokeWidth={1.8} />}
             title={t('retrievalEvents', locale)}
             tooltip={t('apiUsageTooltip', locale)}
             value={
@@ -439,14 +443,14 @@ export default function DashboardPage() {
             }
           />
           <DashboardStatCard
-            icon={<Server className="h-4 w-4" strokeWidth={1.8} />}
+            icon={<Server className="h-4 w-4 text-[#38bdf8]" strokeWidth={1.8} />}
             title={t('apps', locale)}
             tooltip={t('totalAppsTooltip', locale)}
             value={(stats?.total_apps ?? 0).toLocaleString()}
             subtext={t('connectedDevices', locale)}
           />
           <DashboardStatCard
-            icon={<Activity className="h-4 w-4" strokeWidth={1.8} />}
+            icon={<Activity className="h-4 w-4 text-[#f97316]" strokeWidth={1.8} />}
             title={t('addEvents', locale)}
             tooltip={t('apiCallCountTooltip', locale)}
             value={rangeUsageTotals.total.toLocaleString()}
@@ -464,14 +468,15 @@ export default function DashboardPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs h-8 px-3 text-white/70 hover:text-white"
+                className="text-[11px] h-8 px-3 text-white/70 hover:text-white"
                 onClick={() => setShowApiDetails((prev) => !prev)}
               >
-                {showApiDetails ? t('hideDetails', locale) : t('showDetails', locale)}
+                {showApiDetails ? "Hide details" : "View details"}
               </Button>
             </div>
           </CardHeader>
           <CardContent className="pl-2 space-y-4">
+            <div className="text-4xl font-bold text-white">{rangeUsageTotals.total.toLocaleString()}</div>
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={rangeUsageTotals.timeline.length ? rangeUsageTotals.timeline.map(item => ({
@@ -494,6 +499,38 @@ export default function DashboardPage() {
                   <Bar dataKey="delete" stackId="calls" fill="#f97316" radius={[4, 4, 0, 0]} name={t('requestTypeDelete', locale)} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-white/80 md:grid-cols-4">
+              {(['add', 'search', 'list', 'delete'] as const).map((key) => {
+                const labelMap: Record<typeof key, string> = {
+                  add: t('requestTypeAdd', locale),
+                  search: t('requestTypeSearch', locale),
+                  list: t('requestTypeList', locale),
+                  delete: t('requestTypeDelete', locale),
+                };
+                const colorMap: Record<typeof key, string> = {
+                  add: '#7634F9',
+                  search: '#38bdf8',
+                  list: '#22c55e',
+                  delete: '#f97316',
+                };
+                const breakdown = rangeUsageTotals.breakdown as Record<string, number>;
+                const value = breakdown[key] || 0;
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between rounded-md bg-white/5 px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: colorMap[key] }} />
+                      <span className="text-[11px] text-white">{labelMap[key]}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-base font-semibold text-white">{value.toLocaleString()}</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             {showApiDetails && (
               <div className="grid gap-2 text-sm text-white/80">
@@ -530,10 +567,20 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         <Card className="min-w-0 bg-[rgb(26,26,29)] border border-white/5">
-          <CardHeader>
-            <CardTitle className="text-base font-bold text-white">{t('memoryGrowthTrend', locale)}</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-bold text-white">{t('memoryGrowthTrend', locale)}</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-[11px] h-8 px-3 text-white/70 hover:text-white"
+              >
+                View details
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="text-4xl font-bold text-white">{memoryGrowthTotal.toLocaleString()}</div>
             <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={memoryGrowthChartData}>
