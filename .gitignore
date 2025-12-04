@@ -1,4 +1,46 @@
 *.db
+*.sql
+*.sqlite
+
+# Node/pnpm
+ui/node_modules/
+ui/.next/
+ui/.pnpm-store/
+ui/.turbo/
+
+# Frontend build artifacts
+ui/.env.local
+ui/tsconfig.tsbuildinfo
+
+# Python/backend
+api/__pycache__/
+api/*.pyc
+*.pyc
+api/.mypy_cache/
+api/.venv/
+
+# Env/runtime artifacts
+*.env
+*.log
+*.pid
+
+# Runtime data/backups
+openmemory.db
+backups/
+manual_backups/
+backup*/
+*.tar.gz
+*.tgz
+*.zip
+
+# IDE/OS
+.trae/
+.idea/
+.vscode/
+*.suo
+*.user
+*.swp
+.DS_Store
 .env*
 !.env.example
 !.env.dev
