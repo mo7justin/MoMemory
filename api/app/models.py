@@ -29,6 +29,7 @@ class User(Base):
     user_id = Column(String, nullable=False, unique=True, index=True)
     name = Column(String, nullable=True, index=True)
     email = Column(String, unique=True, nullable=True, index=True)
+    is_admin = Column(Boolean, default=False, index=True)  # 管理员标识
     metadata_ = Column('metadata', JSON, default=dict)
     created_at = Column(DateTime, default=get_current_utc_time, index=True)
     updated_at = Column(DateTime,
@@ -37,6 +38,20 @@ class User(Base):
 
     apps = relationship("App", back_populates="owner")
     memories = relationship("Memory", back_populates="user")
+    api_keys = relationship("ApiKey", back_populates="user")
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+    id = Column(UUID, primary_key=True, default=lambda: uuid.uuid4())
+    key = Column(String, unique=True, nullable=False, index=True)
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String, nullable=True)
+    created_at = Column(DateTime, default=get_current_utc_time, index=True)
+    last_used_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="api_keys")
 
 
 class App(Base):
@@ -51,6 +66,11 @@ class App(Base):
     updated_at = Column(DateTime,
                         default=get_current_utc_time,
                         onupdate=get_current_utc_time)
+    
+    # 新增字段用于优化数据结构
+    websocket_url = Column(String, unique=True, nullable=True, index=True)
+    device_name = Column(String, nullable=True, index=True)
+    agent_id = Column(Integer, nullable=True, index=True)
 
     owner = relationship("User", back_populates="apps")
     memories = relationship("Memory", back_populates="app")
@@ -172,22 +192,46 @@ class MemoryAccessLog(Base):
         Index('idx_access_app_time', 'app_id', 'accessed_at'),
     )
 
+class PaymentOrder(Base):
+    __tablename__ = "payment_orders"
+    id = Column(UUID, primary_key=True, default=lambda: uuid.uuid4())
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False, index=True)
+    plan_id = Column(String, nullable=False) # e.g. "pro_monthly"
+    amount = Column(Integer, nullable=False) # In cents/lowest unit, e.g., 900 for $9.00
+    currency = Column(String, nullable=False) # USD, CNY
+    status = Column(String, nullable=False, default="pending", index=True) # pending, paid, failed, cancelled
+    provider = Column(String, nullable=False) # stripe, payjs
+    provider_order_id = Column(String, nullable=True, index=True) # stripe_session_id, payjs_order_id
+    metadata_ = Column('metadata', JSON, default=dict)
+    created_at = Column(DateTime, default=get_current_utc_time, index=True)
+    updated_at = Column(DateTime, default=get_current_utc_time, onupdate=get_current_utc_time)
+    
+    user = relationship("User")
+
 def categorize_memory(memory: Memory, db: Session) -> None:
     """Categorize a memory using OpenAI and store the categories in the database."""
+    print(f"[DEBUG] Starting categorization for memory {memory.id} with content: {memory.content}")
     try:
         # Get categories from OpenAI
+        print(f"[DEBUG] Calling get_categories_for_memory")
         categories = get_categories_for_memory(memory.content)
+        print(f"[DEBUG] Received categories: {categories}")
 
         # Get or create categories in the database
         for category_name in categories:
+            print(f"[DEBUG] Processing category: {category_name}")
             category = db.query(Category).filter(Category.name == category_name).first()
             if not category:
+                print(f"[DEBUG] Creating new category: {category_name}")
                 category = Category(
                     name=category_name,
                     description=f"Automatically created category for {category_name}"
                 )
                 db.add(category)
                 db.flush()  # Flush to get the category ID
+                print(f"[DEBUG] Created category with id: {category.id}")
+            else:
+                print(f"[DEBUG] Category already exists with id: {category.id}")
 
             # Check if the memory-category association already exists
             existing = db.execute(
@@ -199,30 +243,23 @@ def categorize_memory(memory: Memory, db: Session) -> None:
 
             if not existing:
                 # Create the association
+                print(f"[DEBUG] Creating memory-category association")
                 db.execute(
                     memory_categories.insert().values(
                         memory_id=memory.id,
                         category_id=category.id
                     )
                 )
+                print(f"[DEBUG] Created association between memory {memory.id} and category {category.id}")
+            else:
+                print(f"[DEBUG] Association already exists")
 
+        print(f"[DEBUG] Committing changes to database")
         db.commit()
+        print(f"[DEBUG] Categorization completed successfully")
     except Exception as e:
+        print(f"[DEBUG] Rolling back transaction due to error")
         db.rollback()
-        print(f"Error categorizing memory: {e}")
-
-
-@event.listens_for(Memory, 'after_insert')
-def after_memory_insert(mapper, connection, target):
-    """Trigger categorization after a memory is inserted."""
-    db = Session(bind=connection)
-    categorize_memory(target, db)
-    db.close()
-
-
-@event.listens_for(Memory, 'after_update')
-def after_memory_update(mapper, connection, target):
-    """Trigger categorization after a memory is updated."""
-    db = Session(bind=connection)
-    categorize_memory(target, db)
-    db.close()
+        print(f"[ERROR] Error categorizing memory: {e}")
+        import traceback
+        traceback.print_exc()

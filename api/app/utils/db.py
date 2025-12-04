@@ -15,8 +15,7 @@ def get_or_create_user(db: Session, user_id: str) -> User:
 
 
 def get_or_create_app(db: Session, user: User, app_id: str) -> App:
-    """Get or create an app for the given user"""
-    app = db.query(App).filter(App.owner_id == user.id, App.name == app_id).first()
+    app = db.query(App).filter(App.name == app_id).first()
     if not app:
         app = App(owner_id=user.id, name=app_id)
         db.add(app)

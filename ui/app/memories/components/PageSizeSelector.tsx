@@ -1,3 +1,4 @@
+"use client";
 import {
   Select,
   SelectContent,
@@ -5,6 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { t } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 interface PageSizeSelectorProps {
   pageSize: number;
@@ -15,11 +18,12 @@ export function PageSizeSelector({
   pageSize,
   onPageSizeChange,
 }: PageSizeSelectorProps) {
+  const { locale } = useLanguage();
   const pageSizeOptions = [10, 20, 50, 100];
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-zinc-500">Show</span>
+      <span className="text-sm text-zinc-500">{t('show', locale)}</span>
       <Select
         value={pageSize.toString()}
         onValueChange={(value) => onPageSizeChange(Number(value))}
@@ -35,7 +39,7 @@ export function PageSizeSelector({
           ))}
         </SelectContent>
       </Select>
-      <span className="text-sm text-zinc-500">items</span>
+      <span className="text-sm text-zinc-500">{t('items', locale)}</span>
     </div>
   );
 }

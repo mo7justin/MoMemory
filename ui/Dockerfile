@@ -3,8 +3,9 @@
 # Base stage for common setup
 FROM node:18-alpine AS base
 
-# Install dependencies for pnpm
-RUN apk add --no-cache libc6-compat curl && \
+# Install dependencies for pnpm (使用更快的镜像源)
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache libc6-compat curl && \
     corepack enable && \
     corepack prepare pnpm@latest --activate
 
@@ -14,7 +15,7 @@ FROM base AS deps
 
 COPY package.json pnpm-lock.yaml ./
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 FROM base AS builder
 WORKDIR /app
@@ -50,6 +51,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/components ./components
 
 COPY --chown=nextjs:nodejs entrypoint.sh /home/nextjs/entrypoint.sh
 # 添加这一行：使用 sed 命令移除 Windows 的回车符 (\r)

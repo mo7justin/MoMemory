@@ -1,8 +1,8 @@
+version: '3.8'
+
 services:
   pgvector:
     image: pgvector/pgvector:pg16
-    ports:
-      - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=123456
@@ -10,7 +10,8 @@ services:
     volumes:
       - pgvector_pgdata:/var/lib/postgresql/data
     restart: always
-
+    networks:
+      - openmemory-network
 
   mem0_store:
     image: qdrant/qdrant:latest
@@ -18,9 +19,16 @@ services:
       - "6333:6333"
     volumes:
       - mem0_storage:/mem0/storage
+    networks:
+      - openmemory-network
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/localhost/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   openmemory-mcp:
-    image: tjceo721/openmemory-mcp:latest
+    image: openmemory-mcp:latest
     build:
       context: ./api
       dockerfile: Dockerfile
@@ -28,29 +36,84 @@ services:
       - /opt/OpenMemory-MCP/api/.env
     environment:
       - USER=USER
-      - DATABASE_URL=postgresql://postgres:123456@pgvector:5432/openmemory
+      # SMTP邮件服务器配置 - 用于发送验证码
+      - SMTP_SERVER=smtpdm.aliyun.com
+      - SMTP_PORT=465
+      - SMTP_USER=admin@momemory.com
+      - SMTP_PASSWORD=0823KIngqwer
+      # OAuth
+      - QQ_APP_ID=102816719
+      # - QQ_APP_KEY=${QQ_APP_KEY}
+      - QQ_REDIRECT_URI=https://www.momemory.com/api/v1/auth/oauth/qq/callback
+      - QQ_UNIONID_ENABLED=true
+      - AGG_LOGIN_BASE=https://baoxian18.com/connect.php
+      - AGG_APP_ID=158672
+      - AGG_APP_KEY=45a20962ea77c661d19e682ae390d563
+      - AGG_REDIRECT_URI=https://www.momemory.com/api/v1/auth/oauth/agg/callback
+      # Payment - Lemon Squeezy (Placeholders)
+      - LEMONSQUEEZY_API_KEY=
+      - LEMONSQUEEZY_STORE_ID=
+      - LEMONSQUEEZY_WEBHOOK_SECRET=
+      - LEMONSQUEEZY_VARIANT_ID_STARTER=
+      - LEMONSQUEEZY_VARIANT_ID_PRO=
     depends_on:
-      - mem0_store
-      - pgvector
+      mem0_store:
+        condition: service_healthy
+      pgvector:
+        condition: service_started
     ports:
       - "8765:8765"
     volumes:
       - db_storage:/var/lib/openmemory
+      - ./api:/usr/src/openmemory
     command: >
-      uvicorn main:app --host 0.0.0.0 --port 8765 --workers 4
+      uvicorn main:app --host 0.0.0.0 --port 8765 --workers 1
+    networks:
+      - openmemory-network
 
   openmemory-ui:
     build:
       context: ./ui
       dockerfile: Dockerfile
-    image: tjceo721/openmemory-ui:latest
+      args:
+        NEXT_PUBLIC_API_URL_PLACEHOLDER: ${NEXT_PUBLIC_API_URL_PLACEHOLDER:-https://www.momemory.com}
+        NEXT_PUBLIC_USER_ID_PLACEHOLDER: ${NEXT_PUBLIC_USER_ID_PLACEHOLDER:-test_user_001}
     ports:
       - "3002:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://43.138.163.86:8765 # 替换为你的本地 URL 或域名
-      - NEXT_PUBLIC_USER_ID=USER
+      - NEXT_PUBLIC_API_URL=https://www.momemory.com
+      - NEXT_PUBLIC_USER_ID=test_user_001
+    networks:
+      - openmemory-network
+    depends_on:
+      - openmemory-mcp
+
+  neo4j:
+    image: neo4j:latest
+    container_name: openmemory-mcp-neo4j-1
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    volumes:
+      - neo4j_data:/data
+      - neo4j_plugins:/plugins
+    networks:
+      - openmemory-network
+
+networks:
+  openmemory-network:
+    driver: bridge
 
 volumes:
   mem0_storage:
+    external: true
   db_storage:
+    external: true
   pgvector_pgdata:
+    external: true
+  neo4j_data:
+    external: true
+  neo4j_plugins:
+    external: true

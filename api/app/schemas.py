@@ -62,3 +62,34 @@ class PaginatedMemoryResponse(BaseModel):
     page: int
     size: int
     pages: int
+
+# Search schemas
+class SearchRequest(BaseModel):
+    query: str
+    user_id: Optional[str] = None
+    agent_id: Optional[str] = None
+    limit: int = 5
+
+class SearchResponse(BaseModel):
+    content: str
+    score: float
+    metadata: Optional[dict] = None
+
+# API Key schemas
+class ApiKeyCreate(BaseModel):
+    name: Optional[str] = None
+    user_id: str  # Can be UUID or string email/user_id
+
+class ApiKeyResponse(BaseModel):
+    id: UUID
+    name: Optional[str]
+    prefix: str
+    created_at: datetime
+    last_used_at: Optional[datetime]
+    is_active: bool
+    
+    class Config:
+        from_attributes = True
+
+class ApiKeyCreatedResponse(ApiKeyResponse):
+    key: str  # Only returned once upon creation

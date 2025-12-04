@@ -6,12 +6,13 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { setAppDetails } from "@/store/appsSlice";
 import { BiEdit } from "react-icons/bi";
+import { FaRobot } from "react-icons/fa";
 import { constants } from "@/components/shared/source-app";
 import { RootState } from "@/store/store";
+import { t } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
-const capitalize = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
+
 
 const AppDetailCard = ({
   appId,
@@ -23,6 +24,7 @@ const AppDetailCard = ({
   const { updateAppDetails } = useAppsApi();
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
+  const { locale } = useLanguage();
   const apps = useSelector((state: RootState) => state.apps.apps);
   const currentApp = apps.find((app: any) => app.id === appId);
   const appConfig = currentApp
@@ -46,8 +48,8 @@ const AppDetailCard = ({
   };
 
   const buttonText = selectedApp.details.is_active
-    ? "Pause Access"
-    : "Unpause Access";
+    ? t('pauseAccess', locale)
+    : t('unpauseAccess', locale);
 
   return (
     <div>
@@ -67,7 +69,11 @@ const AppDetailCard = ({
               </div>
             ) : (
               <div className="w-5 h-5 flex items-center justify-center bg-zinc-700 rounded-full">
-                <BiEdit className="w-4 h-4 text-zinc-400" />
+                {(appConfig.name?.toLowerCase().includes('ai') || appConfig.name?.toLowerCase().includes('bot') || appConfig.name?.toLowerCase().includes('mcphub') || appConfig.name?.toLowerCase().includes('xiaozhi')) ? (
+                  <FaRobot className="w-4 h-4 text-violet-500" />
+                ) : (
+                  <BiEdit className="w-4 h-4 text-zinc-400" />
+                )}
               </div>
             )}
           </div>
@@ -76,7 +82,7 @@ const AppDetailCard = ({
 
         <div className="space-y-4 p-3">
           <div>
-            <p className="text-xs text-zinc-400">Access Status</p>
+            <p className="text-xs text-zinc-400">{t('accessStatus', locale)}</p>
             <p
               className={`font-medium ${
                 selectedApp.details.is_active
@@ -84,57 +90,55 @@ const AppDetailCard = ({
                   : "text-red-500"
               }`}
             >
-              {capitalize(
-                selectedApp.details.is_active ? "active" : "inactive"
-              )}
+              {selectedApp.details.is_active ? t('active', locale) : t('inactive', locale)}
             </p>
           </div>
 
           <div>
-            <p className="text-xs text-zinc-400">Total Memories Created</p>
+            <p className="text-xs text-zinc-400">{t('totalMemoriesCreated', locale)}</p>
             <p className="font-medium">
-              {selectedApp.details.total_memories_created} Memories
+              {selectedApp.details.total_memories_created} {t('memory', locale)}
             </p>
           </div>
 
           <div>
-            <p className="text-xs text-zinc-400">Total Memories Accessed</p>
+            <p className="text-xs text-zinc-400">{t('totalMemoriesAccessed', locale)}</p>
             <p className="font-medium">
-              {selectedApp.details.total_memories_accessed} Memories
+              {selectedApp.details.total_memories_accessed} {t('memory', locale)}
             </p>
           </div>
 
           <div>
-            <p className="text-xs text-zinc-400">First Accessed</p>
+            <p className="text-xs text-zinc-400">{t('firstAccessed', locale)}</p>
             <p className="font-medium">
               {selectedApp.details.first_accessed
                 ? new Date(
                     selectedApp.details.first_accessed
-                  ).toLocaleDateString("en-US", {
+                  ).toLocaleDateString(locale, {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
                     hour: "numeric",
                     minute: "numeric",
                   })
-                : "Never"}
+                : t('never', locale)}
             </p>
           </div>
 
           <div>
-            <p className="text-xs text-zinc-400">Last Accessed</p>
+            <p className="text-xs text-zinc-400">{t('lastAccessed', locale)}</p>
             <p className="font-medium">
               {selectedApp.details.last_accessed
                 ? new Date(
                     selectedApp.details.last_accessed
-                  ).toLocaleDateString("en-US", {
+                  ).toLocaleDateString(locale, {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
                     hour: "numeric",
                     minute: "numeric",
                   })
-                : "Never"}
+                : t('never', locale)}
             </p>
           </div>
 
@@ -149,10 +153,10 @@ const AppDetailCard = ({
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : buttonText === "Pause Access" ? (
-                <PauseIcon className="h-4 w-4" />
+              ) : buttonText === t('pauseAccess', locale) ? (
+                <PauseIcon className="h-4 w-4 mr-2" />
               ) : (
-                <PlayIcon className="h-4 w-4" />
+                <PlayIcon className="h-4 w-4 mr-2" />
               )}
               {buttonText}
             </Button>

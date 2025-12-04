@@ -37,7 +37,7 @@ else
 fi
 
 # Use sed to replace the placeholder
-find .next/ -type f -name "*.js" -exec sed -i "s|${NEXT_PUBLIC_USER_ID_PLACEHOLDER}|${RUNTIME_USER_ID}|g" {} \;
+find .next/ -type f -name "*.js" -exec sed -i "s|__NEXT_PUBLIC_USER_ID_PLACEHOLDER__|${RUNTIME_USER_ID}|g" {} \;
 echo "Replaced NEXT_PUBLIC_USER_ID_PLACEHOLDER with $RUNTIME_USER_ID"
 
 

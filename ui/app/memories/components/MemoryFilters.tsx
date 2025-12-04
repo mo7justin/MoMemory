@@ -18,8 +18,11 @@ import { debounce } from "lodash";
 import { useEffect, useRef } from "react";
 import FilterComponent from "./FilterComponent";
 import { clearFilters } from "@/store/filtersSlice";
+import { t } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 export function MemoryFilters() {
+  const { locale } = useLanguage();
   const dispatch = useDispatch();
   const selectedMemoryIds = useSelector(
     (state: RootState) => state.memories.selectedMemoryIds
@@ -66,7 +69,7 @@ export function MemoryFilters() {
 
   // add debounce
   const handleSearch = debounce(async (query: string) => {
-    router.push(`/memories?search=${query}`);
+    router.replace(`/memories?search=${encodeURIComponent(query)}`);
   }, 500);
 
   useEffect(() => {
@@ -90,24 +93,24 @@ export function MemoryFilters() {
 
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-4">
-      <div className="relative flex-1">
-        <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+      <div className="relative flex-1 w-full md:w-auto">
+        <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           ref={inputRef}
-          placeholder="Search memories..."
-          className="pl-8 bg-zinc-950 border-zinc-800 max-w-[500px]"
+          placeholder={t('searchMemories', locale)}
+          className={`pl-8 bg-background border-border w-full md:max-w-[500px] text-foreground font-semibold placeholder:text-muted-foreground`}
           onChange={(e) => handleSearch(e.target.value)}
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap md:flex-nowrap">
         <FilterComponent />
         {hasActiveFilters && (
           <Button
             variant="outline"
-            className="bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
+            className="bg-card text-foreground hover:bg-muted"
             onClick={handleClearAllFilters}
           >
-            Clear Filters
+            {t('clearFilters', locale)}
           </Button>
         )}
         {selectedMemoryIds.length > 0 && (
@@ -116,33 +119,33 @@ export function MemoryFilters() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="border-zinc-700/50 bg-zinc-900 hover:bg-zinc-800"
+                  className="border-border/50 bg-card hover:bg-muted"
                 >
-                  Actions
+                  {t('actions', locale)}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="bg-zinc-900 border-zinc-800"
+                className="bg-card border-border"
               >
                 <DropdownMenuItem onClick={handleArchiveSelected}>
                   <Archive className="mr-2 h-4 w-4" />
-                  Archive Selected
+                  {t('archiveSelected', locale)}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handlePauseSelected}>
                   <Pause className="mr-2 h-4 w-4" />
-                  Pause Selected
+                  {t('pauseSelected', locale)}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleResumeSelected}>
                   <Play className="mr-2 h-4 w-4" />
-                  Resume Selected
+                  {t('resumeSelected', locale)}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleDeleteSelected}
                   className="text-red-500"
                 >
                   <FiTrash2 className="mr-2 h-4 w-4" />
-                  Delete Selected
+                  {t('deleteSelected', locale)}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

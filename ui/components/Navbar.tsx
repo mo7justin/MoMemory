@@ -1,163 +1,269 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { HiHome, HiMiniRectangleStack } from "react-icons/hi2";
-import { RiApps2AddFill } from "react-icons/ri";
-import { FiRefreshCcw } from "react-icons/fi";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { CreateMemoryDialog } from "@/app/memories/components/CreateMemoryDialog";
-import { useMemoriesApi } from "@/hooks/useMemoriesApi";
-import Image from "next/image";
-import { useStats } from "@/hooks/useStats";
-import { useAppsApi } from "@/hooks/useAppsApi";
-import { Settings } from "lucide-react";
-import { useConfig } from "@/hooks/useConfig";
+import { BindDeviceDialog } from "@/components/BindDeviceDialog";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { Settings, Moon, Sun, LogOut, Menu } from "lucide-react"; 
+import { LanguageSwitcher } from "./shared/LanguageSwitcher";
+import { t } from "@/lib/locales";
+  import { useLanguage } from "./shared/LanguageContext";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter, usePathname } from "next/navigation";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"; 
+import { Sidebar } from "@/components/Sidebar"; 
 
 export function Navbar() {
+  const { locale } = useLanguage();
+  const router = useRouter();
+  const { logout } = useAuth();
   const pathname = usePathname();
 
-  const memoriesApi = useMemoriesApi();
-  const appsApi = useAppsApi();
-  const statsApi = useStats();
-  const configApi = useConfig();
-
-  // Define route matchers with typed parameter extraction
-  const routeBasedFetchMapping: {
-    match: RegExp;
-    getFetchers: (params: Record<string, string>) => (() => Promise<any>)[];
-  }[] = [
-    {
-      match: /^\/memory\/([^/]+)$/,
-      getFetchers: ({ memory_id }) => [
-        () => memoriesApi.fetchMemoryById(memory_id),
-        () => memoriesApi.fetchAccessLogs(memory_id),
-        () => memoriesApi.fetchRelatedMemories(memory_id),
-      ],
-    },
-    {
-      match: /^\/apps\/([^/]+)$/,
-      getFetchers: ({ app_id }) => [
-        () => appsApi.fetchAppMemories(app_id),
-        () => appsApi.fetchAppAccessedMemories(app_id),
-        () => appsApi.fetchAppDetails(app_id),
-      ],
-    },
-    {
-      match: /^\/memories$/,
-      getFetchers: () => [memoriesApi.fetchMemories],
-    },
-    {
-      match: /^\/apps$/,
-      getFetchers: () => [appsApi.fetchApps],
-    },
-    {
-      match: /^\/$/,
-      getFetchers: () => [statsApi.fetchStats, memoriesApi.fetchMemories],
-    },
-    {
-      match: /^\/settings$/,
-      getFetchers: () => [configApi.fetchConfig],
-    },
-  ];
-
-  const getFetchersForPath = (path: string) => {
-    for (const route of routeBasedFetchMapping) {
-      const match = path.match(route.match);
-      if (match) {
-        if (route.match.source.includes("memory")) {
-          return route.getFetchers({ memory_id: match[1] });
-        }
-        if (route.match.source.includes("app")) {
-          return route.getFetchers({ app_id: match[1] });
-        }
-        return route.getFetchers({});
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [userInfo, setUserInfo] = useState<{name: string; email?: string; loginType: string; avatar?: string; userId?: string} | null>(null);
+  const userId = useSelector((state: RootState) => state.profile.userId);
+  
+  // Sync User Info Logic
+  const getCookieUserId = (): string => {
+    try {
+      const cookies = typeof document !== 'undefined' ? document.cookie || '' : '';
+      const match = cookies.match(/(?:^|; )userInfo=([^;]+)/);
+      if (match && match[1]) {
+        const info = JSON.parse(decodeURIComponent(match[1]));
+        return info?.email || info?.userId || info?.unionid || info?.openid || '';
       }
+    } catch {}
+    return '';
+  };
+
+  useEffect(() => {
+    const storedUserInfo = localStorage.getItem('userInfo');
+    if (storedUserInfo) {
+      setUserInfo(JSON.parse(storedUserInfo));
     }
-    return [];
-  };
+    try {
+      const cid = getCookieUserId();
+      const currentEmail = localStorage.getItem('userEmail') || '';
+      if (cid && !currentEmail) {
+        const s = localStorage.getItem('userInfo');
+        const info = s ? JSON.parse(s) : {};
+        info.userId = info.userId || cid;
+        info.email = info.email || cid;
+        localStorage.setItem('userInfo', JSON.stringify(info));
+        localStorage.setItem('userEmail', cid);
+        setUserInfo(info);
+        try { window.dispatchEvent(new Event('userInfoUpdated')); } catch {}
+      }
+    } catch {}
+    const handleUserInfoUpdated = () => {
+      try {
+        const s = localStorage.getItem('userInfo');
+        if (s) setUserInfo(JSON.parse(s));
+      } catch {}
+    };
+    try { window.addEventListener('userInfoUpdated' as any, handleUserInfoUpdated as any); } catch {}
+    return () => {
+      try { window.removeEventListener('userInfoUpdated' as any, handleUserInfoUpdated as any); } catch {}
+    };
+  }, []);
 
-  const handleRefresh = async () => {
-    const fetchers = getFetchersForPath(pathname);
-    await Promise.allSettled(fetchers.map((fn) => fn()));
+  const handleLogout = async () => {
+    try {
+      setUserInfo(null);
+      await logout();
+    } catch (error) {
+      setUserInfo(null);
+      setTimeout(() => {
+        router.push('/login');
+      }, 300);
+    }
   };
-
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === href;
-    return pathname.startsWith(href.substring(0, 5));
+  
+  const getUserAvatar = () => {
+    const initial = userInfo?.name ? userInfo.name.charAt(0).toUpperCase() : 'U';
+    const avatar = userInfo?.avatar || (userInfo as any)?.metadata_?.avatar || '';
+    if (avatar) {
+      return (
+        <img src={avatar} alt={userInfo?.name || 'user'} className="w-9 h-9 rounded-full object-cover" />
+      );
+    }
+    return (
+      <div className="w-9 h-9 rounded-full bg-violet-500 flex items-center justify-center text-white font-semibold">
+        {initial}
+      </div>
+    );
   };
+  
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      try {
+        const menu = document.querySelector('.absolute.right-0');
+        const button = document.querySelector('button.rounded-full');
+        const target = event.target as Node | null;
+        if (!target) return;
+        if (userMenuOpen && menu && button && !menu.contains(target) && !button.contains(target)) {
+          setUserMenuOpen(false);
+        }
+      } catch {}
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
 
-  const activeClass = "bg-zinc-800 text-white border-zinc-600";
-  const inactiveClass = "text-zinc-300";
+  if (pathname === '/login') return null;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
-      <div className="container flex h-14 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.svg" alt="OpenMemory" width={26} height={26} />
-          <span className="text-xl font-medium">OpenMemory</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <Link href="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex items-center gap-2 border-none ${
-                isActive("/") ? activeClass : inactiveClass
-              }`}
-            >
-              <HiHome />
-              Dashboard
-            </Button>
-          </Link>
-          <Link href="/memories">
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex items-center gap-2 border-none ${
-                isActive("/memories") ? activeClass : inactiveClass
-              }`}
-            >
-              <HiMiniRectangleStack />
-              Memories
-            </Button>
-          </Link>
-          <Link href="/apps">
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex items-center gap-2 border-none ${
-                isActive("/apps") ? activeClass : inactiveClass
-              }`}
-            >
-              <RiApps2AddFill />
-              Apps
-            </Button>
-          </Link>
-          <Link href="/settings">
-            <Button
-              variant="outline"
-              size="sm"
-              className={`flex items-center gap-2 border-none ${
-                isActive("/settings") ? activeClass : inactiveClass
-              }`}
-            >
-              <Settings />
-              Settings
-            </Button>
+    // Changed h-14 to h-16 for taller navbar
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-muted/40 backdrop-blur supports-[backdrop-filter]:bg-muted/40">
+      {/* Removed container class and used w-full px-6 to push content to edges */}
+      <div className="w-full flex h-16 items-center justify-between px-6">
+        <div className="flex items-center">
+            {/* Mobile Menu Trigger */}
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="md:hidden mr-2">
+                        <Menu className="h-5 w-5" />
+                        <span className="sr-only">Toggle Menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-72 flex flex-col">
+                    <div className="p-6 pb-0">
+                        <div className="flex items-center justify-start">
+                            <img 
+                                src="/logo.svg" 
+                                alt="OpenMemory Logo" 
+                                className="object-contain h-8 dark:invert invert-0" 
+                            />
+                        </div>
+                    </div>
+                    <Sidebar className="w-full border-r-0 pt-6 flex-1" />
+                </SheetContent>
+            </Sheet>
+
+            {/* Hide Logo on Mobile, show only on Desktop */}
+            <Link href="/" className="hidden md:flex items-center py-2">
+            <div className="w-40 h-10 flex items-center justify-start">
+            <img 
+              src="/logo.svg" 
+              alt="OpenMemory Logo" 
+                className="object-contain h-8 dark:invert invert-0" 
+            />
+          </div>
           </Link>
         </div>
+        
+        <div className="flex-1" />
+
         <div className="flex items-center gap-4">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            className="border-zinc-700/50 bg-zinc-900 hover:bg-zinc-800"
-          >
-            <FiRefreshCcw className="transition-transform duration-300 group-hover:rotate-180" />
-            Refresh
-          </Button>
+          <div className="hidden md:block">
+             <CreateMemoryDialog />
+          </div>
+          <div className="md:hidden">
           <CreateMemoryDialog />
+          </div>
+          
+          <div className="hidden md:block">
+          <BindDeviceDialog />
+          </div>
+           
+          <div className="hidden md:block">
+          <LanguageSwitcher />
+          </div>
+          
+          <div className="relative">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="rounded-full overflow-hidden p-0 w-9 h-9 border border-transparent hover:border-violet-400 dark:hover:border-violet-500"
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+            >
+              {getUserAvatar()}
+            </Button>
+            
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-64 rounded-lg bg-card border border-border shadow-lg py-2 z-50">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground mb-1">
+                    {t('hi', locale)} {userInfo?.name || 'User'}!
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {(() => {
+                      const displayId = (userInfo as any)?.email || (userInfo as any)?.userId || userId || getCookieUserId() || '';
+                      // 如果有邮箱，优先显示邮箱
+                      if ((userInfo as any)?.email) return (userInfo as any).email;
+                      
+                      if (userInfo?.name && !displayId.includes('@')) return userInfo.name; // 如果没有邮箱且有名字，可能显示名字（视情况而定，这里保持原逻辑或调整）
+                      
+                      if (userInfo?.loginType === 'qq') return `QQ: ${displayId}`;
+                      if (userInfo?.loginType === 'wechat') return `${t('wechat', locale)}: ${displayId}`;
+                      return displayId;
+                    })()}
+                  </p>
+                </div>
+                
+                <div className="px-4 py-3 border-b border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-foreground">{t('theme', locale)}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setTheme('light')}
+                        className={`p-2 rounded-md transition-colors ${
+                          theme === 'light' 
+                            ? 'bg-violet-100 dark:bg-violet-900/30 text-foreground' 
+                            : 'text-muted-foreground hover:bg-violet-50 dark:hover:bg-violet-900/20'
+                        }`}
+                      >
+                        <Sun size={16} />
+                      </button>
+                      <button
+                        onClick={() => setTheme('dark')}
+                        className={`p-2 rounded-md transition-colors ${
+                          theme === 'dark' 
+                            ? 'bg-violet-100 dark:bg-violet-900/30 text-foreground' 
+                            : 'text-muted-foreground hover:bg-violet-50 dark:hover:bg-violet-900/20'
+                        }`}
+                      >
+                        <Moon size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mobile Language Switcher inside User Menu */}
+                <div className="px-4 py-3 border-b border-border md:hidden">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-foreground">Language</span>
+                        <div className="flex gap-2">
+                             <LanguageSwitcher />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Bind Device inside User Menu */}
+                <div className="px-4 py-3 border-b border-border md:hidden">
+                    <BindDeviceDialog />
+                </div>
+                
+                <ChangePasswordDialog />
+                
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-sm text-left text-foreground hover:bg-violet-50 dark:hover:bg-violet-900/20 flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  {t('logout', locale)}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

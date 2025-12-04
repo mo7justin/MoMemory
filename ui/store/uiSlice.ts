@@ -27,11 +27,13 @@ const uiSlice = createSlice({
   initialState,
   reducers: {
     openUpdateMemoryDialog: (state, action: PayloadAction<{ memoryId: string; memoryContent: string }>) => {
+      console.log("Redux action: openUpdateMemoryDialog", action.payload);
       state.dialogs.updateMemory.isOpen = true;
       state.dialogs.updateMemory.memoryId = action.payload.memoryId;
       state.dialogs.updateMemory.memoryContent = action.payload.memoryContent;
     },
     closeUpdateMemoryDialog: (state) => {
+      console.log("Redux action: closeUpdateMemoryDialog");
       state.dialogs.updateMemory.isOpen = false;
       state.dialogs.updateMemory.memoryId = null;
       state.dialogs.updateMemory.memoryContent = null;
@@ -44,4 +46,4 @@ export const {
   closeUpdateMemoryDialog,
 } = uiSlice.actions;
 
-export default uiSlice.reducer; 
+export default uiSlice.reducer;

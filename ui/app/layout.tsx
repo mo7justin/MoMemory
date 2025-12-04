@@ -1,16 +1,19 @@
-import type React from "react";
+import React from "react";
 import "@/app/globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Navbar } from "@/components/Navbar";
-import { Toaster } from "@/components/ui/toaster";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Inter } from "next/font/google";
 import { Providers } from "./providers";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { LayoutContent } from "@/app/components/LayoutContent";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { cn } from "@/lib/utils";
 
-export const metadata = {
-  title: "OpenMemory - Developer Dashboard",
-  description: "Manage your OpenMemory integration and stored memories",
-  generator: "v0.dev",
-};
+// Initialize Inter font
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export default function RootLayout({
   children,
@@ -19,18 +22,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="h-screen font-sans antialiased flex flex-col bg-zinc-950">
+      <head>
+        <title>Momemory - AI Memory System</title>
+        <meta name="description" content="Momemory - AI Memory System" />
+        <meta name="generator" content="Momemory" />
+        <link rel="icon" href="/logo-s.svg" type="image/svg+xml" />
+      </head>
+      <body 
+        className={cn("h-screen antialiased flex flex-col", inter.className, inter.variable)}
+      >
         <Providers>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Navbar />
-            <ScrollArea className="h-[calc(100vh-64px)]">{children}</ScrollArea>
-            <Toaster />
-          </ThemeProvider>
+          <ErrorBoundary>
+            <LayoutContent>{children}</LayoutContent>
+          </ErrorBoundary>
+          <Toaster />
+          <SonnerToaster position="top-center" />
         </Providers>
       </body>
     </html>

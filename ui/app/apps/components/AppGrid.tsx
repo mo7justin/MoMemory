@@ -5,11 +5,16 @@ import { RootState } from "@/store/store";
 import { useAppsApi } from "@/hooks/useAppsApi";
 import { AppCard } from "./AppCard";
 import { AppCardSkeleton } from "@/skeleton/AppCardSkeleton";
+import { t } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
+
 
 export function AppGrid() {
   const { fetchApps, isLoading } = useAppsApi();
   const apps = useSelector((state: RootState) => state.apps.apps);
   const filters = useSelector((state: RootState) => state.apps.filters);
+  const { locale } = useLanguage();
+
 
   useEffect(() => {
     fetchApps({
@@ -33,7 +38,7 @@ export function AppGrid() {
   if (apps.length === 0) {
     return (
       <div className="text-center text-zinc-500 py-8">
-        No apps found matching your filters
+        {t("noAppsFound", locale)}
       </div>
     );
   }

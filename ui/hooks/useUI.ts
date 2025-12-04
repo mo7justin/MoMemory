@@ -7,10 +7,12 @@ export const useUI = () => {
   const updateMemoryDialog = useSelector((state: RootState) => state.ui.dialogs.updateMemory);
 
   const handleOpenUpdateMemoryDialog = (memoryId: string, memoryContent: string) => {
+    console.log("Opening update memory dialog", { memoryId, memoryContent });
     dispatch(openUpdateMemoryDialog({ memoryId, memoryContent }));
   };
 
   const handleCloseUpdateMemoryDialog = () => {
+    console.log("Closing update memory dialog");
     dispatch(closeUpdateMemoryDialog());
   };
 
@@ -19,4 +21,4 @@ export const useUI = () => {
     handleOpenUpdateMemoryDialog,
     handleCloseUpdateMemoryDialog,
   };
-}; 
+};

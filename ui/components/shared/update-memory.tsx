@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useMemoriesApi } from "@/hooks/useMemoriesApi";
 import { toast } from "sonner";
@@ -35,7 +35,13 @@ const UpdateMemory = ({
   const textRef = useRef<HTMLTextAreaElement>(null);
   const pathname = usePathname();
 
+  // 添加调试信息
+  useEffect(() => {
+    console.log("UpdateMemory component props:", { memoryId, memoryContent, open });
+  }, [memoryId, memoryContent, open]);
+
   const handleUpdateMemory = async (text: string) => {
+    console.log("Updating memory:", { memoryId, text });
     try {
       await updateMemory(memoryId, text);
       toast.success("Memory updated successfully");

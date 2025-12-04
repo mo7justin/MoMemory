@@ -67,7 +67,7 @@ export const useAppsApi = (): UseAppsApiReturn => {
   const dispatch = useDispatch<AppDispatch>();
   const user_id = useSelector((state: RootState) => state.profile.userId);
 
-  const URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8765";
+  const URL = process.env.NEXT_PUBLIC_API_URL || "";
 
   const fetchApps = useCallback(async (params: FetchAppsParams = {}): Promise<{ apps: App[], total: number }> => {
     const {
@@ -86,6 +86,15 @@ export const useAppsApi = (): UseAppsApiReturn => {
         page: String(page),
         page_size: String(page_size)
       });
+
+      // 添加user_id参数
+      // 优先使用 Redux 中的 user_id，其次尝试从 localStorage 获取
+      const userId = user_id || (typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null);
+      if (userId) {
+        queryParams.append('user_id', userId);
+      }
+
+      // 移除hide_empty参数，显示所有应用（包括没有记忆的应用）
 
       if (name) queryParams.append('name', name);
       if (is_active !== undefined) queryParams.append('is_active', String(is_active));

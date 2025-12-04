@@ -3,6 +3,8 @@ import Categories from "@/components/shared/categories";
 import Link from "next/link";
 import { constants } from "@/components/shared/source-app";
 import Image from "next/image";
+import { formatDate } from "@/lib/helpers";
+import { useLanguage } from "@/components/shared/LanguageContext";
 interface MemoryCardProps {
   id: string;
   content: string;
@@ -24,6 +26,7 @@ export function MemoryCard({
   app_name,
   state,
 }: MemoryCardProps) {
+  const { locale } = useLanguage();
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
       <div className="p-4">
@@ -61,13 +64,7 @@ export function MemoryCard({
                   Accessed {access_count} times
                 </span>
               ) : (
-                new Date(created_at + "Z").toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "numeric",
-                })
+                formatDate(new Date(created_at + "Z").getTime() / 1000, locale)
               )}
             </span>
 

@@ -34,24 +34,27 @@ import {
   clearFilters,
 } from "@/store/filtersSlice";
 import { useMemoriesApi } from "@/hooks/useMemoriesApi";
+import { t, Locale } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
-const columns = [
+const getColumns = (locale: Locale) => [
   {
-    label: "Memory",
+    label: t("memory", locale),
     value: "memory",
   },
   {
-    label: "App Name",
+    label: t("appName", locale),
     value: "app_name",
   },
   {
-    label: "Created On",
+    label: t("createdOn", locale),
     value: "created_at",
   },
 ];
 
 export default function FilterComponent() {
   const dispatch = useDispatch();
+  const { locale } = useLanguage();
   const { fetchApps } = useAppsApi();
   const { fetchCategories, updateSort } = useFiltersApi();
   const { fetchMemories } = useMemoriesApi();
@@ -61,6 +64,7 @@ export default function FilterComponent() {
     string[]
   >([]);
   const [showArchived, setShowArchived] = useState(false);
+  const columns = getColumns(locale);
 
   const apps = useSelector((state: RootState) => state.apps.apps);
   const categories = useSelector(
@@ -83,7 +87,13 @@ export default function FilterComponent() {
   }, [isOpen, filters]);
 
   useEffect(() => {
-    handleClearFilters();
+    (async () => {
+      try {
+        await fetchMemories();
+      } catch (error) {
+        console.error("Initial fetchMemories failed:", error);
+      }
+    })();
   }, []);
 
   const toggleAppFilter = (app: string) => {
@@ -113,7 +123,11 @@ export default function FilterComponent() {
     setTempSelectedCategories([]);
     setShowArchived(false);
     dispatch(clearFilters());
-    await fetchMemories();
+    try {
+      await fetchMemories();
+    } catch (error) {
+      console.error("Failed to clear filters and fetch memories:", error);
+    }
   };
 
   const handleApplyFilters = async () => {
@@ -200,15 +214,15 @@ export default function FilterComponent() {
       <Dialog open={isOpen} onOpenChange={handleDialogChange}>
         <DialogTrigger asChild>
           <Button
-            variant="outline"
-            className={`h-9 px-4 border-zinc-700/50 bg-zinc-900 hover:bg-zinc-800 ${
-              hasActiveFilters ? "border-primary" : ""
-            }`}
-          >
-            <Filter
-              className={`h-4 w-4 ${hasActiveFilters ? "text-primary" : ""}`}
-            />
-            Filter
+              variant="outline"
+              className={`h-9 px-4 border-border/50 bg-card hover:bg-violet-50 dark:hover:bg-violet-900/20 ${
+                hasActiveFilters ? "border-primary" : ""
+              }`}
+            >
+              <Filter
+                className={`h-4 w-4 ${hasActiveFilters ? "text-primary" : ""}`}
+              />
+              {t("filter", locale)}
             {hasActiveFilters && (
               <Badge className="ml-2 bg-primary hover:bg-primary/80 text-xs">
                 {filters.selectedApps.length +
@@ -218,31 +232,31 @@ export default function FilterComponent() {
             )}
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-800 text-zinc-100">
+        <DialogContent className="sm:max-w-[425px] bg-card border-border text-foreground">
           <DialogHeader>
-            <DialogTitle className="text-zinc-100 flex justify-between items-center">
-              <span>Filters</span>
+            <DialogTitle className="text-foreground flex justify-between items-center">
+              <span>{t("filters", locale)}</span>
             </DialogTitle>
           </DialogHeader>
           <Tabs defaultValue="apps" className="w-full">
-            <TabsList className="grid grid-cols-3 bg-zinc-800">
+            <TabsList className="grid grid-cols-3 bg-muted">
               <TabsTrigger
                 value="apps"
-                className="data-[state=active]:bg-zinc-700"
+                className="data-[state=active]:bg-card"
               >
-                Apps
+                {t("apps", locale)}
               </TabsTrigger>
               <TabsTrigger
                 value="categories"
-                className="data-[state=active]:bg-zinc-700"
+                className="data-[state=active]:bg-card"
               >
-                Categories
+                {t("categories", locale)}
               </TabsTrigger>
               <TabsTrigger
                 value="archived"
-                className="data-[state=active]:bg-zinc-700"
+                className="data-[state=active]:bg-card"
               >
-                Archived
+                {t("archived", locale)}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="apps" className="mt-4">
@@ -256,11 +270,11 @@ export default function FilterComponent() {
                     onCheckedChange={(checked) =>
                       toggleAllApps(checked as boolean)
                     }
-                    className="border-zinc-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   <Label
                     htmlFor="select-all-apps"
-                    className="text-sm font-normal text-zinc-300 cursor-pointer"
+                    className="text-sm font-normal text-muted-foreground cursor-pointer"
                   >
                     Select All
                   </Label>
@@ -271,11 +285,11 @@ export default function FilterComponent() {
                       id={`app-${app.id}`}
                       checked={tempSelectedApps.includes(app.id)}
                       onCheckedChange={() => toggleAppFilter(app.id)}
-                      className="border-zinc-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <Label
                       htmlFor={`app-${app.id}`}
-                      className="text-sm font-normal text-zinc-300 cursor-pointer"
+                      className="text-sm font-normal text-muted-foreground cursor-pointer"
                     >
                       {app.name}
                     </Label>
@@ -315,11 +329,11 @@ export default function FilterComponent() {
                       onCheckedChange={() =>
                         toggleCategoryFilter(category.name)
                       }
-                      className="border-zinc-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <Label
                       htmlFor={`category-${category.name}`}
-                      className="text-sm font-normal text-zinc-300 cursor-pointer"
+                      className="text-sm font-normal text-muted-foreground cursor-pointer"
                     >
                       {category.name}
                     </Label>
@@ -331,19 +345,19 @@ export default function FilterComponent() {
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
-                    id="show-archived"
-                    checked={showArchived}
-                    onCheckedChange={(checked) =>
-                      setShowArchived(checked as boolean)
-                    }
-                    className="border-zinc-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <Label
-                    htmlFor="show-archived"
-                    className="text-sm font-normal text-zinc-300 cursor-pointer"
-                  >
-                    Show Archived Memories
-                  </Label>
+                      id="show-archived"
+                      checked={showArchived}
+                      onCheckedChange={(checked) =>
+                        setShowArchived(checked as boolean)
+                      }
+                      className="border-zinc-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <Label
+                      htmlFor="show-archived"
+                      className="text-sm font-normal text-zinc-300 cursor-pointer"
+                    >
+                      {t("showArchivedMemories", locale)}
+                    </Label>
                 </div>
               </div>
             </TabsContent>
@@ -353,18 +367,18 @@ export default function FilterComponent() {
             {hasTempFilters && (
               <Button
                 onClick={handleClearFilters}
-                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                className="bg-muted hover:bg-muted/80 text-muted-foreground"
               >
-                Clear All
+                {t("clearAll", locale)}
               </Button>
             )}
             {/* Apply filters button */}
             <Button
-              onClick={handleApplyFilters}
-              className="bg-primary hover:bg-primary/80 text-white"
-            >
-              Apply Filters
-            </Button>
+                onClick={handleApplyFilters}
+                className="bg-primary hover:bg-primary/80 text-white"
+              >
+                {t("applyFilters", locale)}
+              </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -373,20 +387,20 @@ export default function FilterComponent() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="h-9 px-4 border-zinc-700/50 bg-zinc-900 hover:bg-zinc-800"
+              className="h-9 px-4 border-border/50 bg-card hover:bg-violet-50 dark:hover:bg-violet-900/20"
           >
             {filters.sortDirection === "asc" ? (
               <SortAsc className="h-4 w-4" />
             ) : (
               <SortDesc className="h-4 w-4" />
             )}
-            Sort: {columns.find((c) => c.value === filters.sortColumn)?.label}
+            {t('sortCreatedOn', locale).split(':')[0]}: {columns.find((c) => c.value === filters.sortColumn)?.label}
             <ChevronDown className="h-4 w-4 ml-2" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-zinc-100">
-          <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuContent className="w-56 bg-card border-border text-foreground">
+          <DropdownMenuLabel>{t('sortCreatedOn', locale)}</DropdownMenuLabel>
+          <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuGroup>
             {columns.map((column) => (
               <DropdownMenuItem

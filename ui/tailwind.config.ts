@@ -19,6 +19,27 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        // 回退到经典的 System UI 字体栈，这通常是这种 Dashboard 界面最想要的效果
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "Noto Sans",
+          "sans-serif",
+          "Apple Color Emoji",
+          "Segoe UI Emoji",
+          "Segoe UI Symbol",
+          "Noto Color Emoji",
+          "Microsoft YaHei", 
+          "PingFang SC",
+          "Noto Sans SC",
+          "微软雅黑",
+        ],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -72,6 +93,10 @@ const config = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      boxShadow: {
+        'r': '4px 0 6px -1px rgba(0, 0, 0, 0.03), 2px 0 4px -1px rgba(0, 0, 0, 0.02)',
+        'l': '-4px 0 6px -1px rgba(0, 0, 0, 0.03), -2px 0 4px -1px rgba(0, 0, 0, 0.02)',
       },
     },
   },

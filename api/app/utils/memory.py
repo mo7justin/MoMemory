@@ -153,14 +153,18 @@ def reset_memory_client():
 
 def get_default_memory_config():
     """Get default memory client configuration with sensible defaults."""
+    print("DEBUG: 开始执行get_default_memory_config")
+    
     # Detect vector store based on environment variables
     vector_store_config = {
         "collection_name": "openmemory",
         "host": "mem0_store",
     }
+    print(f"DEBUG: 初始vector_store_config: {vector_store_config}")
 
     # Check for different vector store configurations based on environment variables
     if os.environ.get("CHROMA_HOST") and os.environ.get("CHROMA_PORT"):
+        print("DEBUG: 使用Chroma配置")
         vector_store_provider = "chroma"
         vector_store_config.update(
             {
@@ -169,6 +173,7 @@ def get_default_memory_config():
             }
         )
     elif os.environ.get("QDRANT_HOST") and os.environ.get("QDRANT_PORT"):
+        print("DEBUG: 使用Qdrant配置")
         vector_store_provider = "qdrant"
         vector_store_config.update(
             {
@@ -179,6 +184,7 @@ def get_default_memory_config():
     elif os.environ.get("WEAVIATE_CLUSTER_URL") or (
         os.environ.get("WEAVIATE_HOST") and os.environ.get("WEAVIATE_PORT")
     ):
+        print("DEBUG: 使用Weaviate配置")
         vector_store_provider = "weaviate"
         # Prefer an explicit cluster URL if provided; otherwise build from host/port
         cluster_url = os.environ.get("WEAVIATE_CLUSTER_URL")
@@ -191,12 +197,14 @@ def get_default_memory_config():
             "cluster_url": cluster_url,
         }
     elif os.environ.get("REDIS_URL"):
+        print("DEBUG: 使用Redis配置")
         vector_store_provider = "redis"
         vector_store_config = {
             "collection_name": "openmemory",
             "redis_url": os.environ.get("REDIS_URL"),
         }
     elif os.environ.get("PG_HOST") and os.environ.get("PG_PORT"):
+        print("DEBUG: 使用PGVector配置")
         vector_store_provider = "pgvector"
         vector_store_config.update(
             {
@@ -208,6 +216,7 @@ def get_default_memory_config():
             }
         )
     elif os.environ.get("MILVUS_HOST") and os.environ.get("MILVUS_PORT"):
+        print("DEBUG: 使用Milvus配置")
         vector_store_provider = "milvus"
         # Construct the full URL as expected by MilvusDBConfig
         milvus_host = os.environ.get("MILVUS_HOST")
@@ -225,6 +234,7 @@ def get_default_memory_config():
             "metric_type": "COSINE",  # Using COSINE for better semantic similarity
         }
     elif os.environ.get("ELASTICSEARCH_HOST") and os.environ.get("ELASTICSEARCH_PORT"):
+        print("DEBUG: 使用Elasticsearch配置")
         vector_store_provider = "elasticsearch"
         # Construct the full URL with scheme since Elasticsearch client expects it
         elasticsearch_host = os.environ.get("ELASTICSEARCH_HOST")
@@ -244,6 +254,7 @@ def get_default_memory_config():
             }
         )
     elif os.environ.get("OPENSEARCH_HOST") and os.environ.get("OPENSEARCH_PORT"):
+        print("DEBUG: 使用OpenSearch配置")
         vector_store_provider = "opensearch"
         vector_store_config.update(
             {
@@ -252,6 +263,7 @@ def get_default_memory_config():
             }
         )
     elif os.environ.get("FAISS_PATH"):
+        print("DEBUG: 使用FAISS配置")
         vector_store_provider = "faiss"
         vector_store_config = {
             "collection_name": "openmemory",
@@ -260,19 +272,23 @@ def get_default_memory_config():
             "distance_strategy": "cosine",
         }
     else:
+        print("DEBUG: 使用默认Qdrant配置")
         # Default fallback to Qdrant
         vector_store_provider = "qdrant"
         vector_store_config.update(
             {
-                "port": 6333,  
+                "port": 6333,
+                "embedding_model_dims": OPENAI_EMBEDDING_MODEL_DIMS,
             }
         )
+        print(f"DEBUG: 在Qdrant分支中设置embedding_model_dims为: {OPENAI_EMBEDDING_MODEL_DIMS}")
 
     print(
         f"Auto-detected vector store: {vector_store_provider} with config: {vector_store_config}"
     )
+    print(f"DEBUG: vector_store_config中的embedding_model_dims: {vector_store_config.get('embedding_model_dims')}")
 
-    return {
+    config = {
         "vector_store": {
             "provider": vector_store_provider,
             "config": vector_store_config,
@@ -298,6 +314,19 @@ def get_default_memory_config():
         },
         "version": "v1.1",
     }
+    
+    # 检查config中的vector_store配置
+    if "vector_store" in config and "config" in config["vector_store"]:
+        vs_config = config["vector_store"]["config"]
+        print(f"DEBUG: config中vector_store_config的embedding_model_dims: {vs_config.get('embedding_model_dims')}")
+        
+        # 确保vector_store配置中包含embedding_model_dims
+        if "embedding_model_dims" not in vs_config and "embedding_model_dims" in vector_store_config:
+            vs_config["embedding_model_dims"] = vector_store_config["embedding_model_dims"]
+            print(f"DEBUG: 手动添加embedding_model_dims到config中: {vs_config['embedding_model_dims']}")
+
+    print(f"DEBUG: 最终返回的config: {config}")
+    return config
 
 
 def _parse_environment_variables(config_dict):
@@ -420,6 +449,7 @@ def get_memory_client(custom_instructions: str = None):
         # Only reinitialize if config changed or client doesn't exist
         if _memory_client is None or _config_hash != current_config_hash:
             print(f"Initializing memory client with config hash: {current_config_hash}")
+            print(f"Full config: {config}")  # 添加调试信息
             try:
                 _memory_client = Memory.from_config(config_dict=config)
                 _config_hash = current_config_hash

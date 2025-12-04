@@ -10,6 +10,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useLanguage } from "@/components/shared/LanguageContext";
+import { t } from "@/lib/locales";
 
 interface MemoryActionsProps {
   memoryId: string;
@@ -22,10 +24,12 @@ export function MemoryActions({
   memoryContent,
   memoryState,
 }: MemoryActionsProps) {
+  const { locale } = useLanguage();
   const { handleOpenUpdateMemoryDialog } = useUI();
   const { updateMemoryState, isLoading } = useMemoriesApi();
 
   const handleEdit = () => {
+    console.log("Edit button clicked", { memoryId, memoryContent });
     handleOpenUpdateMemoryDialog(memoryId, memoryContent);
   };
 
@@ -36,11 +40,11 @@ export function MemoryActions({
   const getStateLabel = () => {
     switch (memoryState) {
       case "archived":
-        return "Archived";
+        return t('archivedStatus', locale);
       case "paused":
-        return "Paused";
+        return t('paused', locale);
       default:
-        return "Active";
+        return t('active', locale);
     }
   };
 
@@ -70,7 +74,7 @@ export function MemoryActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-40 bg-zinc-900 border-zinc-800 text-zinc-100">
-          <DropdownMenuLabel>Change State</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('status', locale)}</DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-zinc-800" />
           <DropdownMenuItem
             onClick={() => handleStateChange("active")}
@@ -78,7 +82,7 @@ export function MemoryActions({
             disabled={memoryState === "active"}
           >
             <Play className="h-3 w-3 mr-2" />
-            <span className="font-semibold">Active</span>
+            <span className="font-semibold">{t('active', locale)}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleStateChange("paused")}
@@ -86,7 +90,7 @@ export function MemoryActions({
             disabled={memoryState === "paused"}
           >
             <Pause className="h-3 w-3 mr-2" />
-            <span className="font-semibold">Pause</span>
+            <span className="font-semibold">{t('pause', locale)}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleStateChange("archived")}
@@ -94,7 +98,7 @@ export function MemoryActions({
             disabled={memoryState === "archived"}
           >
             <Archive className="h-3 w-3 mr-2" />
-            <span className="font-semibold">Archive</span>
+            <span className="font-semibold">{t('archive', locale)}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -107,7 +111,7 @@ export function MemoryActions({
         className="shadow-md bg-zinc-900 border border-zinc-700/50 hover:bg-zinc-950 text-zinc-400"
       >
         <Pencil className="h-3 w-3 -mr-1" />
-        <span className="font-semibold">Edit</span>
+        <span className="font-semibold">{t('edit', locale)}</span>
       </Button>
     </div>
   );

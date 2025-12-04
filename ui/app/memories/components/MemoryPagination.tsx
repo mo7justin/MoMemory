@@ -1,5 +1,8 @@
+"use client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { t } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 interface MemoryPaginationProps {
   currentPage: number;
@@ -12,6 +15,7 @@ export function MemoryPagination({
   totalPages,
   setCurrentPage,
 }: MemoryPaginationProps) {
+  const { locale } = useLanguage();
   return (
     <div className="flex items-center justify-between my-auto">
       <div className="flex items-center gap-2">
@@ -24,7 +28,7 @@ export function MemoryPagination({
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="text-sm">
-          Page {currentPage} of {totalPages}
+          {t('pageOf', locale).replace('{{current}}', currentPage.toString()).replace('{{total}}', totalPages.toString())}
         </div>
         <Button
           variant="outline"

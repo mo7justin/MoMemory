@@ -16,8 +16,11 @@ import { Label } from "@/components/ui/label";
 import { GoPlus } from "react-icons/go";
 import { Loader2 } from "lucide-react";
 import { useMemoriesApi } from "@/hooks/useMemoriesApi";
+import { useStats } from "@/hooks/useStats";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { t } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 // Add JSX namespace to fix intrinsic elements typing
 declare namespace JSX {
@@ -27,35 +30,40 @@ declare namespace JSX {
 }
 
 export function CreateMemoryDialog() {
+  const { locale } = useLanguage();
   const { createMemory, isLoading, fetchMemories } = useMemoriesApi();
+  const { fetchStats } = useStats();
   const [open, setOpen] = useState(false);
-  const textRef = useRef<HTMLTextAreaElement>(null);
+  const [inputValue, setInputValue] = useState('');
 
-  const handleCreateMemory = async (text: string) => {
+  const handleCreateMemory = async () => {
     // 检查输入是否为空
-    if (!text.trim()) {
-      toast.error("Memory content cannot be empty");
+    if (!inputValue.trim()) {
+      toast.error(t('memoryContentCannotBeEmpty', locale));
       return;
     }
     
     try {
-      await createMemory(text);
-      toast.success("Memory created successfully");
-      // close the dialog
+      await createMemory(inputValue);
+      toast.success(t('memoryCreatedSuccessfully', locale));
+      // Reset input and close the dialog
+      setInputValue('');
       setOpen(false);
-      // 清空输入框
-      if (textRef.current) {
-        textRef.current.value = '';
-      }
-      // refetch memories
+      // refetch memories and stats to update UI
       await fetchMemories();
+      await fetchStats();
     } catch (error: any) {
       console.error("Create memory error:", error);
-      // 显示更具体的错误信息
-      const errorMessage = error.message || "Failed to create memory";
-      toast.error(`Failed to create memory: ${errorMessage}`);
+      toast.error(t('failedToCreateMemory', locale));
     }
   };
+
+  // Reset input when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setInputValue('');
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -66,34 +74,35 @@ export function CreateMemoryDialog() {
           className="bg-primary hover:bg-primary/90 text-white"
         >
           <GoPlus />
-          Create Memory
+          {t('createMemory', locale)}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px] bg-zinc-900 border-zinc-800">
+      <DialogContent className="sm:max-w-[525px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle>Create New Memory</DialogTitle>
+          <DialogTitle>{t('createNewMemory', locale)}</DialogTitle>
           <DialogDescription>
-            Add a new memory to your OpenMemory instance
+            {t('addNewMemoryDescription', locale)}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="memory">Memory</Label>
+            <Label htmlFor="memory">{t('memory', locale)}</Label>
             <Textarea
-              ref={textRef}
               id="memory"
-              placeholder="e.g., Lives in San Francisco"
-              className="bg-zinc-950 border-zinc-800 min-h-[150px]"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="bg-background border-border min-h-[150px]"
+              placeholder={t('memoryPlaceholder', locale)}
             />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t('cancel', locale)}
           </Button>
           <Button
-            disabled={isLoading || !textRef?.current?.value?.trim()}
-            onClick={() => handleCreateMemory(textRef?.current?.value || "")}
+            disabled={isLoading || !inputValue.trim()}
+            onClick={handleCreateMemory}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

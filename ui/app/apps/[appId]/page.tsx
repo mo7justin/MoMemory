@@ -12,11 +12,26 @@ import "@/styles/animation.css";
 import NotFound from "@/app/not-found";
 import { AppDetailCardSkeleton } from "@/skeleton/AppDetailCardSkeleton";
 import { MemoryCardSkeleton } from "@/skeleton/MemoryCardSkeleton";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 export default function AppDetailsPage() {
   const params = useParams();
   const appId = params.appId as string;
   const [activeTab, setActiveTab] = useState("created");
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  
+  // 如果还在加载认证状态，显示加载状态
+  if (isLoading) {
+    return <div className="fixed inset-0 w-full h-full flex items-center justify-center">Loading...</div>;
+  }
+  
+  // 如果用户未认证，重定向到登录页面
+  if (!isAuthenticated) {
+    router.push('/login');
+    return <div className="fixed inset-0 w-full h-full flex items-center justify-center">Redirecting...</div>;
+  }
 
   const {
     fetchAppDetails,

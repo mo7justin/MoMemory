@@ -13,6 +13,8 @@ import { useCallback } from "react";
 import debounce from "lodash/debounce";
 import { useAppsApi } from "@/hooks/useAppsApi";
 import { AppFiltersSkeleton } from "@/skeleton/AppFiltersSkeleton";
+import { t, Locale } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 import {
   Select,
   SelectContent,
@@ -32,11 +34,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-const sortOptions = [
-  { value: "name", label: "Name" },
-  { value: "memories", label: "Memories Created" },
-  { value: "memories_accessed", label: "Memories Accessed" },
+const getSortOptions = (locale: Locale) => [
+  { value: "name", label: t("name", locale) },
+  { value: "memories", label: t("memoriesCreated", locale) },
+  { value: "memories_accessed", label: t("memoriesAccessed", locale) },
 ];
+
+const getSortOptionLabel = (value: string, locale: Locale) => {
+  const options = getSortOptions(locale);
+  return options.find((o) => o.value === value)?.label || value;
+};
 
 export function AppFilters() {
   const dispatch = useDispatch();
@@ -74,6 +81,8 @@ export function AppFilters() {
     setLocalSearch(filters.searchQuery);
   }, [filters.searchQuery]);
 
+  const { locale } = useLanguage();
+
   if (isLoading) {
     return <AppFiltersSkeleton />;
   }
@@ -81,10 +90,10 @@ export function AppFilters() {
   return (
     <div className="flex items-center gap-2">
       <div className="relative flex-1">
-        <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+        <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search Apps..."
-          className="pl-8 bg-zinc-950 border-zinc-800 max-w-[500px]"
+          placeholder={t("searchApps", locale)}
+          className="pl-8"
           value={localSearch}
           onChange={handleSearchChange}
         />
@@ -94,36 +103,36 @@ export function AppFilters() {
         value={String(filters.isActive)}
         onValueChange={handleActiveFilterChange}
       >
-        <SelectTrigger className="w-[130px] border-zinc-700/50 bg-zinc-900 hover:bg-zinc-800">
-          <SelectValue placeholder="Status" />
+        <SelectTrigger className="w-[130px]">
+          <SelectValue placeholder={t("status", locale)} />
         </SelectTrigger>
-        <SelectContent className="border-zinc-700/50 bg-zinc-900 hover:bg-zinc-800">
-          <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="true">Active</SelectItem>
-          <SelectItem value="false">Inactive</SelectItem>
+        <SelectContent>
+          <SelectItem value="all">{t("allStatus", locale)}</SelectItem>
+          <SelectItem value="true">{t("active", locale)}</SelectItem>
+          <SelectItem value="false">{t("inactive", locale)}</SelectItem>
         </SelectContent>
       </Select>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className="h-9 px-4 border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
-          >
-            {filters.sortDirection === "asc" ? (
-              <SortDesc className="h-4 w-4 mr-2" />
-            ) : (
-              <SortAsc className="h-4 w-4 mr-2" />
-            )}
-            Sort: {sortOptions.find((o) => o.value === filters.sortBy)?.label}
+            <Button
+              variant="outline"
+              className="h-9 px-4"
+            >
+              {filters.sortDirection === "asc" ? (
+                <SortDesc className="h-4 w-4 mr-2" />
+              ) : (
+                <SortAsc className="h-4 w-4 mr-2" />
+              )}
+              {t("sortBy", locale)}: {getSortOptionLabel(filters.sortBy, locale)}
             <ChevronDown className="h-4 w-4 ml-2" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-zinc-100">
-          <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuLabel>{t('sortBy', locale)}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            {sortOptions.map((option) => (
+            {getSortOptions(locale).map((option) => (
               <DropdownMenuItem
                 key={option.value}
                 onClick={() =>

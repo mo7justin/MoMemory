@@ -1,3 +1,4 @@
+"use client";
 import {
   Edit,
   MoreHorizontal,
@@ -48,8 +49,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatDate } from "@/lib/helpers";
+import { t } from "@/lib/locales";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 export function MemoryTable() {
+  const { locale } = useLanguage();
   const { toast } = useToast();
   const router = useRouter();
   const dispatch = useDispatch();
@@ -58,7 +62,7 @@ export function MemoryTable() {
   );
   const memories = useSelector((state: RootState) => state.memories.memories);
 
-  const { deleteMemories, updateMemoryState, isLoading } = useMemoriesApi();
+  const { deleteMemories, updateMemoryState, isLoading, fetchMemoryById, fetchAccessLogs, fetchRelatedMemories } = useMemoriesApi();
 
   const handleDeleteMemory = (id: string) => {
     deleteMemories([id]);
@@ -102,18 +106,25 @@ export function MemoryTable() {
   const isPartiallySelected =
     selectedMemoryIds.length > 0 && selectedMemoryIds.length < memories.length;
 
-  const handleMemoryClick = (id: string) => {
-    router.push(`/memory/${id}`);
+  const handleMemoryClick = async (id: string) => {
+    const event = new CustomEvent('open-memory-details-sheet', { detail: { open: true } });
+    window.dispatchEvent(event);
+    Promise.allSettled([
+      fetchMemoryById(id),
+      fetchAccessLogs(id, 1, 10),
+      fetchRelatedMemories(id)
+    ]).then(() => {}).catch(() => {});
   };
 
   return (
-    <div className="rounded-md border">
-      <Table className="">
+    <div className="rounded-md border w-full overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table className="min-w-full">
         <TableHeader>
-          <TableRow className="bg-zinc-800 hover:bg-zinc-800">
+          <TableRow className="bg-muted hover:bg-muted">
             <TableHead className="w-[50px] pl-4">
               <Checkbox
-                className="data-[state=checked]:border-primary border-zinc-500/50"
+                className="data-[state=checked]:border-primary border-border"
                 checked={isAllSelected}
                 data-state={
                   isPartiallySelected
@@ -125,31 +136,31 @@ export function MemoryTable() {
                 onCheckedChange={handleSelectAll}
               />
             </TableHead>
-            <TableHead className="border-zinc-700">
-              <div className="flex items-center min-w-[600px]">
-                <HiMiniRectangleStack className="mr-1" />
-                Memory
+            <TableHead className="border-border">
+              <div className="flex items-center w-full">
+                <HiMiniRectangleStack className="mr-1 flex-shrink-0" />
+                <span className="truncate">{t('memory', locale)}</span>
               </div>
             </TableHead>
-            <TableHead className="border-zinc-700">
+            <TableHead className="border-border hidden md:table-cell">
               <div className="flex items-center">
                 <PiSwatches className="mr-1" size={15} />
-                Categories
+                {t('categories', locale)}
               </div>
             </TableHead>
-            <TableHead className="w-[140px] border-zinc-700">
+            <TableHead className="w-[250px] border-border hidden md:table-cell">
               <div className="flex items-center">
                 <GoPackage className="mr-1" />
-                Source App
+                {t('sourceApp', locale)}
               </div>
             </TableHead>
-            <TableHead className="w-[140px] border-zinc-700">
+            <TableHead className="w-[140px] border-border hidden md:table-cell">
               <div className="flex items-center w-full justify-center">
                 <CiCalendar className="mr-1" size={16} />
-                Created On
+                {t('createdOn', locale)}
               </div>
             </TableHead>
-            <TableHead className="text-right border-zinc-700 flex justify-center">
+            <TableHead className="text-right border-border flex justify-center">
               <div className="flex items-center justify-end">
                 <MoreHorizontal className="h-4 w-4 mr-2" />
               </div>
@@ -160,22 +171,22 @@ export function MemoryTable() {
           {memories.map((memory) => (
             <TableRow
               key={memory.id}
-              className={`hover:bg-zinc-900/50 ${
+              className={`hover:bg-accent/20 ${
                 memory.state === "paused" || memory.state === "archived"
-                  ? "text-zinc-400"
+                  ? "text-muted-foreground"
                   : ""
               } ${isLoading ? "animate-pulse opacity-50" : ""}`}
             >
               <TableCell className="pl-4">
                 <Checkbox
-                  className="data-[state=checked]:border-primary border-zinc-500/50"
+                  className="data-[state=checked]:border-primary border-border"
                   checked={selectedMemoryIds.includes(memory.id)}
                   onCheckedChange={(checked) =>
                     handleSelectMemory(memory.id, checked as boolean)
                   }
                 />
               </TableCell>
-              <TableCell className="">
+              <TableCell className="max-w-[200px] md:max-w-none truncate">
                 {memory.state === "paused" || memory.state === "archived" ? (
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
@@ -185,18 +196,18 @@ export function MemoryTable() {
                           className={`font-medium ${
                             memory.state === "paused" ||
                             memory.state === "archived"
-                              ? "text-zinc-400"
-                              : "text-white"
-                          } cursor-pointer`}
+                              ? "text-muted-foreground"
+                              : "text-foreground"
+                          } cursor-pointer truncate`}
                         >
                           {memory.memory}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>
-                          This memory is{" "}
+                      {t('thisMemoryIs', locale)} 
                           <span className="font-bold">
-                            {memory.state === "paused" ? "paused" : "archived"}
+                            {memory.state === "paused" ? t('paused', locale) : t('archivedStatus', locale)}
                           </span>{" "}
                           and <span className="font-bold">disabled</span>.
                         </p>
@@ -206,28 +217,27 @@ export function MemoryTable() {
                 ) : (
                   <div
                     onClick={() => handleMemoryClick(memory.id)}
-                    className={`font-medium text-white cursor-pointer`}
+                    className={`font-medium text-foreground cursor-pointer truncate`}
                   >
                     {memory.memory}
                   </div>
                 )}
               </TableCell>
-              <TableCell className="">
+              <TableCell className="hidden md:table-cell">
                 <div className="flex flex-wrap gap-1">
                   <Categories
                     categories={memory.categories}
                     isPaused={
                       memory.state === "paused" || memory.state === "archived"
                     }
-                    concat={true}
                   />
                 </div>
               </TableCell>
-              <TableCell className="w-[140px] text-center">
+              <TableCell className="w-[250px] text-center hidden md:table-cell">
                 <SourceApp source={memory.app_name} />
               </TableCell>
-              <TableCell className="w-[140px] text-center">
-                {formatDate(memory.created_at)}
+              <TableCell className="w-[140px] text-center hidden md:table-cell">
+                {formatDate(memory.created_at, locale)}
               </TableCell>
               <TableCell className="text-right flex justify-center">
                 <DropdownMenu>
@@ -238,7 +248,7 @@ export function MemoryTable() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="bg-zinc-900 border-zinc-800"
+                    className="bg-card border-border"
                   >
                     <DropdownMenuItem
                       className="cursor-pointer"
@@ -251,12 +261,12 @@ export function MemoryTable() {
                       {memory?.state === "active" ? (
                         <>
                           <Pause className="mr-2 h-4 w-4" />
-                          Pause
+                          {t('pause', locale)}
                         </>
                       ) : (
                         <>
                           <Play className="mr-2 h-4 w-4" />
-                          Resume
+                          {t('resume', locale)}
                         </>
                       )}
                     </DropdownMenuItem>
@@ -270,17 +280,17 @@ export function MemoryTable() {
                     >
                       <Archive className="mr-2 h-4 w-4" />
                       {memory?.state !== "archived" ? (
-                        <>Archive</>
+                        <>{t('archive', locale)}</>
                       ) : (
-                        <>Unarchive</>
+                        <>{t('unarchive', locale)}</>
                       )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="cursor-pointer"
-                      onClick={() => handleEditMemory(memory.id, memory.memory)}
+                      onClick={() => handleMemoryClick(memory.id)}
                     >
                       <Edit className="mr-2 h-4 w-4" />
-                      Edit
+                      {t('edit', locale)}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -288,7 +298,7 @@ export function MemoryTable() {
                       onClick={() => handleDeleteMemory(memory.id)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
+                      {t('delete', locale)}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -297,6 +307,7 @@ export function MemoryTable() {
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
